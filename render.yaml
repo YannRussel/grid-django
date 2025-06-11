@@ -3,7 +3,7 @@ services:
     name: grid
     env: python
     buildCommand: "./build.sh"
-    startCommand: "gunicorn mon_projet.wsgi:application"
+    startCommand: "gunicorn grid.wsgi:application"
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: grid.settings
