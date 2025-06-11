@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: grid
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn mon_projet.wsgi:application"
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: grid.settings
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: ALLOWED_HOSTS
+        value: grid.onrender.com
+      - key: DEBUG
+        value: false
