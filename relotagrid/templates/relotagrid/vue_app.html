@@ -1,0 +1,97 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}
+  Module a exploiter du site {{site.nom}}
+{% endblock title %}
+
+{% block css %}
+  <style>
+  .card-module {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+
+  .card-module:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 20px rgba(0, 128, 0, 0.2);
+  }
+
+  .icon-large {
+    font-size: 4rem;
+  }
+
+  .text-blanc {
+    color: white;
+  }
+
+  .enGrasMax {
+    font-weight: bold;
+  }
+
+  .marge_navbar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  body {
+    background-color: #f8f9fa;
+  }
+</style>
+
+{% endblock css %}
+
+{% block content %}
+  
+  <div style="height: 65px;"></div>
+
+  <div class="container py-5">
+    <h3 class="text-center mb-4 text-success">Bienvenue sur votre site : {{site.nom}}</h3>
+    <p class="text-center mb-5">Choisissez un module pour continuer</p>
+    <div class="row g-4">
+
+      <div class="col-md-4">
+        <a href="{% url 'gestion_personnel:control_retard' site.slug %}" class="text-decoration-none">
+          <div class="card text-center card-module h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-people-fill icon-large text-success"></i>
+              <h5 class="card-title mt-3">Gestion du personnel</h5>
+              <p class="card-text">Ajoutez, modifiez ou visualisez les informations des agents.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-4">
+        <a href="{% url 'relotagrid:detail_site' site.slug %}" class="text-decoration-none">
+          <div class="card text-center card-module h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-clipboard-check-fill icon-large text-primary"></i>
+              <h5 class="card-title mt-3">Contrôle qualité</h5>
+              <p class="card-text">Gérez les contrôles qualité des différents sites et locaux.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="col-md-4">
+        <a href="{% url 'gestion_stock:livraisons_par_site' site.slug %}" class="text-decoration-none">
+          <div class="card text-center card-module h-100 shadow-sm">
+            <div class="card-body">
+              <i class="bi bi-box-seam icon-large text-warning"></i>
+              <h5 class="card-title mt-3">Gestion de stock</h5>
+              <p class="card-text">Visualisez et suivez les stocks disponibles dans vos sites.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+{% endblock content %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"
+    crossorigin="anonymous"></script>
+{% endblock script %}
+  

@@ -1,0 +1,90 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}
+  Livraisons de stock pour le site {{ site.nom }}
+{% endblock title %}
+
+{% block css %}
+<style>
+  .btn-add, .btn-filter {
+    margin-bottom: 1rem;
+  }
+  .table th, .table td {
+    vertical-align: middle;
+  }
+
+  @media (max-width: 576px) {
+    .btn-add,
+    .btn-filter {
+      width: 100%;
+    }
+    .filter-form {
+      flex-direction: column !important;
+      align-items: stretch !important;
+    }
+    .filter-form .form-control,
+    .filter-form .btn {
+      width: 100% !important;
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div style="height: 65px;"></div>
+
+<div class="container py-5">
+  <h3 class="mb-4 text-success text-center">Gestion des Stocks – {{ site.nom }}</h3>
+
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+
+    <div class="d-flex flex-column gap-2">
+      <a href="{% url 'gestion_stock:enregistrer_utilisation' site.slug %}" class="btn btn-success btn-add">
+        <i class="bi bi-plus-circle"></i> Enregistrer une utilisation 
+      </a>
+      <a href="{% url 'gestion_stock:enregistrer_produit' %}" class="btn btn-outline-secondary btn-add">
+        <i class="bi bi-box-seam"></i> Gestion des produits
+      </a>
+      <a href="{% url 'gestion_stock:enregistrer_livraison' site.slug %}" class="btn btn-outline-secondary btn-add">
+        <i class="bi bi-box"></i> Gestion des Livraisons
+      </a>
+    </div>
+
+    <form method="get" class="d-flex filter-form align-items-center" action="{% url 'gestion_stock:livraisons_par_site' site.slug %}">
+      {% csrf_token %}
+      <input type="month" name="mois" id="mois" class="form-control me-2" value="{{ mois_selectionne|default:'' }}">
+      <button type="submit" class="btn btn-outline-primary btn-filter">Filtrer </button>
+    </form>
+  </div>
+
+  {% if livraisons %}
+    <div class="table-responsive mt-4">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Produit</th>
+            <th>Conditionnement</th>
+            <th>Quantité livrée</th>
+            <th>Mois</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for livraison in livraisons %}
+          <tr>
+            <td>{{ livraison.produit.nom }}</td>
+            <td>{{ livraison.produit.conditionnement }}</td>
+            <td>{{ livraison.quantite_livree }}</td>
+            <td>{{ livraison.mois|date:"F Y" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="alert alert-info mt-4 text-center">
+      Pas de livraison pour ce mois.
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}

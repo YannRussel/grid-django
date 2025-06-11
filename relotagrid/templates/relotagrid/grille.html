@@ -1,0 +1,305 @@
+{% extends "relotagrid/base.html" %}
+{% load custom_tags %}
+{% load static %}
+{% block title %}
+   Grille de controle du site {{site.nom}}
+{% endblock title %}
+
+{% block css %}
+  <style>
+  #pdf-section {
+  padding: 10px;
+  margin-top: 20px;
+  transition: font-size 0.6s ease-in-out;
+  font-size: small;
+}
+
+.pdf-export {
+  font-size: 9px !important;
+}
+
+table, th, td {
+  border: 1px solid black !important;
+  border-collapse: collapse !important;
+}
+
+.pdf-export td[rowspan]::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background-color: white;
+}
+
+.pdf-export td {
+  position: relative;
+}
+
+.select-clean {
+  border: none;
+  border-bottom: 1px solid #ccc;
+  background-color: transparent;
+  font-weight: bold;
+  font-size: 16px;
+  padding: 2px 4px;
+  color: #333;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+.select-clean:focus {
+  outline: none;
+  border-bottom: 1px solid #000;
+}
+
+.consulter-btn {
+  margin-right: 2px;
+}
+
+table tr td {
+  text-align: center;
+  vertical-align: middle;
+}
+
+@media screen and (max-width: 768px) {
+  .text_phone {
+    display: none;
+  }
+}
+
+/* Image appréciation stylisée comme un tampon */
+.appreciation-container {
+  text-align: center;
+  margin-top: 30px;
+}
+
+.appreciation-container img {
+  height: 180px;
+  width: auto;
+  opacity: 0.85;
+  transform: rotate(-5deg);
+}
+
+.appreciation-container p {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+/* IMPORTANT: éviter la coupure entre tableau et appréciation dans le PDF */
+.pdf-export .appreciation-wrapper {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+  -webkit-region-break-inside: avoid !important;
+}
+
+.pdf-export .table-responsive:last-of-type {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+}
+
+</style>
+{% endblock css %}
+
+{% block content %}
+<div style="height: 65px;"></div>
+
+<div class="container">
+  <div class="degrader-success-right py-2 rounded border-bottom border-successs d-flex justify-content-between flex-wrap">
+    <h4>Site <span class="text-success">{{grille.local.site.nom}}</span></h4>
+    <button onclick="generatePDF()" class="btn btn-warning ms-3">📄 Télécharger la grille</button>
+  </div>
+  <span id="date"></span>
+  <span class="ms-5"> Contrôle du <strong>{{grille.date}} à {{grille.heure}}</strong></span>
+</div>
+
+<div id="pdf-loader"
+  style="display: none; position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%; background: rgba(0,0,0,0.5);
+  color: white; font-size: 24px; justify-content: center;
+  align-items: center; z-index: 9999; display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity 0.3s;">
+  Téléchargement du PDF en cours...
+</div>
+
+<div class="py-2 container">
+  <div id="pdf-section">
+    <!-- En-tête -->
+    <div class="row p-2">
+      <div class="col-8">
+        <h1 class="enGrasMax text-success">R.Elota</h1>
+      </div>
+    </div>
+
+    <h4 class="text-center text-uppercase enGrasMax text-success py-2 border-bottom">Grille de Contrôle</h4>
+
+    <!-- Infos de base -->
+    <div class="row p-2">
+      <div class="col-6">
+        <p>SITE : <span class="enGrasMax">{{grille.local.site.nom}} ___________________</span></p>
+      </div>
+      <div class="col-6">
+        <p>LOCAL TYPE : <span class="enGrasMax">{{grille.local.local_type}}</span></p>
+      </div>
+    </div>
+
+    <!-- Tableau principal -->
+    <div class="table-responsive">
+      <table class="table table-hover text-center table-sm table-bordered">
+        <thead class="text-uppercase text-light table-secondary">
+          <tr>
+            <th>Date</th>
+            <th>Heure</th>
+            <th>Lieu du contrôle</th>
+            <th>Contrôleur</th>
+            <th>Agent</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>{{grille.date}}</td>
+            <td>{{grille.heure}}</td>
+            <td>{{grille.local.site.nom}}</td>
+            <td>{{grille.utilisateur.first_name}} - {{grille.utilisateur.last_name}}</td>
+            <td>{{grille.agent.nom}} {{grille.agent.prenom}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tableau des critères -->
+    <div class="table-responsive">
+      <table class="table table-hover text-center table-sm table-bordered">
+        <thead class="text-uppercase text-light table-success">
+          <tr>
+            <th>Élément contrôle<br><small class="text-dark">(sol, porte, meuble...)</small></th>
+            <th>Critères<br><small class="text-dark">(déchets, trace...)</small></th>
+            <th>Remarque<br><small class="text-dark">(Travail de l'agent)</small></th>
+            <th>Note</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for element_control in grille.local.element_controle.all %}
+            {% with criteres=element_control.critere.all %}
+              {% for critere in criteres %}
+              <tr>
+                {% if forloop.first %}
+                  <td rowspan="{{ criteres|length }}">{{ element_control.libelle }}</td>
+                {% endif %}
+                <td>{{ critere.critere }}</td>
+                <td>
+                  {% get_note grille element_control critere as note %}
+                  {% if note.note == 0 %}
+                    Nul
+                  {% elif note.note == 1 %}
+                    Faible
+                  {% elif note.note == 2 %}
+                    Peu conforme
+                  {% elif note.note == 3 %}
+                    Excellent
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>{{ note.note|default:"-" }}</td>
+              </tr>
+              {% endfor %}
+            {% endwith %}
+          {% empty %}
+            <tr><td colspan="4">Aucun élément de contrôle trouvé</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <br><br>
+
+    <div class="appreciation-wrapper" style="display: flex; justify-content: space-between; align-items: flex-start; page-break-inside: avoid; page-break-before: always;">
+      <div class="left-content" style="flex: 1; padding-right: 20px;">
+        <p>Niveau requis (objectif) : <span class="enGrasMax">{{objectif}}</span></p>
+        <p>Résultat du contrôle : <span class="enGrasMax">{{grille.total_points}}</span></p>
+        <p>Visa du contrôleur : <span class="enGrasMax">{{grille.utilisateur.first_name}} {{grille.utilisateur.last_name}}</span></p>
+        <p>Visa de l'Agent : <span class="enGrasMax">{{grille.agent.nom}} {{grille.agent.prenom}}</span></p>
+        <br/>
+        <p>Remise en conformité :</p>
+        <div class="enGrasMax ps-3">
+          <p><input type="checkbox"> Immédiat</p>
+          <p><input type="checkbox"> Sous 24h/48h</p>
+        </div>
+      </div>
+
+      <div class="right-content" style="flex-shrink: 0; width: 220px; text-align: center;">
+        {% if grille.appreciation == "Excellent" %}
+          <img src="{% static 'relotagrid/img/1.png' %}" alt="Excellent" style="width: 180px; height: auto; margin-bottom: 10px;">
+          <p class="text-success" style="font-weight: bold; font-size: 1.3rem; margin: 0;">Excellent</p>
+        {% elif grille.appreciation == "Passable" %}
+          <img src="{% static 'relotagrid/img/3.png' %}" alt="Passable" style="width: 180px; height: auto; margin-bottom: 10px;">
+          <p class="text-warning" style="font-weight: bold; font-size: 1.3rem; margin: 0;">Passable</p>
+        {% elif grille.appreciation == "Nul" %}
+          <img src="{% static 'relotagrid/img/2.png' %}" alt="Nul" style="width: 180px; height: auto; margin-bottom: 10px;">
+          <p class="text-danger" style="font-weight: bold; font-size: 1.3rem; margin: 0;">Nul</p>
+        {% else %}
+          <p>Pas d'appréciation</p>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  function generatePDF() {
+    const loader = document.getElementById("pdf-loader");
+    loader.style.opacity = 1;
+    loader.style.pointerEvents = "all";
+    loader.style.display = "flex";
+
+    const element = document.getElementById("pdf-section");
+    const cloned = element.cloneNode(true);
+    cloned.classList.add("pdf-export");
+
+    // Remplacer les selects par leur texte sélectionné dans la copie
+    const originalSelects = element.querySelectorAll("select");
+    const clonedSelects = cloned.querySelectorAll("select");
+    originalSelects.forEach((originalSelect, index) => {
+      const selectedOption = originalSelect.options[originalSelect.selectedIndex];
+      const selectedText = selectedOption && selectedOption.value !== "" ? selectedOption.textContent : "[Non défini]";
+      const span = document.createElement("span");
+      span.textContent = selectedText;
+      span.style.fontWeight = "bold";
+      const clonedSelect = clonedSelects[index];
+      clonedSelect.parentNode.replaceChild(span, clonedSelect);
+    });
+
+    // Forcer largeur et table-layout fixed pour éviter débordement
+    cloned.querySelectorAll("table").forEach(table => {
+      table.style.width = "100%";
+      table.style.tableLayout = "fixed";
+    });
+
+    // Ajouter la copie hors écran pour le rendu
+    const container = document.createElement("div");
+    container.style.position = "fixed";
+    container.style.top = "-9999px";
+    container.style.left = "-9999px";
+    container.appendChild(cloned);
+    document.body.appendChild(container);
+
+    html2pdf().set({
+      margin: 0.2,
+      filename: 'grille-controle.pdf',
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 4, useCORS: true, dpi: 300, letterRendering: true },
+      jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+    }).from(cloned).save().then(() => {
+      document.body.removeChild(container);
+      loader.style.opacity = 0;
+      loader.style.pointerEvents = "none";
+      loader.style.display = "none";
+    });
+  }
+</script>
+{% endblock content %}

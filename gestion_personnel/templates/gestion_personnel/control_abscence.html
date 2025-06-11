@@ -1,0 +1,169 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}Contrôle des retards{% endblock %}
+
+{% block css %}
+  <style>
+    .phrase-item {
+      display: none;
+    }
+    .phrase-item.show {
+      display: flex !important;
+    }
+    .phrase-item:hover {
+      background-color: #e0eff3;
+      transition: .5s ease-in-out;
+    }
+    .spinner-grow {
+      width: 15px;
+      height: 15px;
+    }
+    .phrase-content {
+      flex-grow: 1;
+      width: 100%;
+    }
+    #searchInput {
+      width: 70%;
+    }
+    #loader {
+      text-align: center;
+      margin-top: 20px;
+    }
+    @media screen and (max-width: 768px) {
+      .text_phone {
+        display: none;
+      }
+    }
+  </style>
+{% endblock css %}
+
+{% block content %}
+  <div style="height: 65px;"></div>
+
+  <div class="container">
+    <div class="degrader-success-right py-2 rounded border-bottom border-success">
+      <h4>Gestion des retards de chaque Agent recensé dans le système</h4>
+    </div>
+    <span id="date"></span>
+  </div>
+
+  <div class="container bg-blanc">
+    <center class="my-3">
+      <a href="{% url 'gestion_personnel:liste_retards_par_date' site.slug %}" class="btn btn-outline-primary">
+        Voir la liste de présence
+      </a>
+    </center>
+
+    <center>
+      <input type="text" id="searchInput" class="form-control my-3" placeholder="Rechercher un agent...">
+    </center>
+
+    <h3 class="my-4 text-success" style = "text-align : center;">Enregistrement des retards des agents du site : {{ site.nom }}</h3>
+
+    <div class="row" id="phrasesContainer">
+      {% for agent in agents %}
+        <div class="col-lg-4 col-md-6 mb-4 phrase-item">
+          <div class="card h-100 shadow-sm d-flex flex-column phrase-content">
+            <div class="card-header bg-success text-white">
+              {{ agent.prenom }} {{ agent.nom }}
+            </div>
+            <div class="card-body d-flex flex-column justify-content-between">
+              <form method="post" class="needs-validation" novalidate action="{% url 'gestion_personnel:control_retard' site.slug %}">
+                {% csrf_token %}
+                <input type="hidden" name="agent_id" value="{{ agent.id }}">
+                <div class="mb-3">
+                  <label for="date_{{ agent.id }}" class="form-label">Date</label>
+                  <input type="date" class="form-control date-field" id="date_{{ agent.id }}" name="date" required>
+                </div>
+                <div class="mb-3">
+                  <label for="heure_{{ agent.id }}" class="form-label">Heure d’arrivée</label>
+                  <input type="time" class="form-control" id="heure_{{ agent.id }}" name="heure_arrivee" required>
+                </div>
+                <div class="d-flex gap-2">
+                  {% if agent.id in agents_avec_retard %}
+                    <button type="submit" class="btn btn-secondary w-50" disabled>Déjà enregistré</button>
+                  {% else %}
+                    <button type="submit" class="btn btn-success w-50">Enregistrer</button>
+                  {% endif %}
+                  <a href="{% url 'relotagrid:detail_agent' agent.id %}" class="btn btn-success w-50">Consulter</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <div id="loader" style="display: none;">
+      <div class="spinner-border text-success" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+
+{% block script %}
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const formatted = `${yyyy}-${mm}-${dd}`;
+      document.querySelectorAll('.date-field').forEach(input => {
+        input.value = formatted;
+      });
+
+      const displayDate = `${dd}/${mm}/${yyyy}`;
+      document.getElementById('date').textContent = `Nous sommes le ${displayDate}`;
+    });
+
+    $(document).ready(function () {
+      const itemsPerPage = 6;
+      let currentIndex = 0;
+      let filteredItems = [];
+
+      function loadNextItems() {
+        $('#loader').show();
+        const batch = filteredItems.slice(currentIndex, currentIndex + itemsPerPage);
+        batch.forEach(item => $(item).addClass('show'));
+        currentIndex += itemsPerPage;
+        $('#loader').hide();
+      }
+
+      function applyFilter() {
+        const term = $('#searchInput').val().toLowerCase();
+        const allItems = $('#phrasesContainer .phrase-item');
+        filteredItems = [];
+
+        allItems.removeClass('show').hide();
+
+        allItems.each(function () {
+          const name = $(this).find('.card-header').text().toLowerCase();
+          if (name.includes(term)) {
+            filteredItems.push(this);
+          }
+        });
+
+        currentIndex = 0;
+        loadNextItems();
+      }
+
+      function handleScroll() {
+        if ($(window).scrollTop() + $(window).height() >= $(document).height() - 100) {
+          loadNextItems();
+        }
+      }
+
+      const allItems = $('#phrasesContainer .phrase-item').toArray();
+      filteredItems = allItems;
+
+      loadNextItems();
+
+      $(window).on('scroll', handleScroll);
+      $('#searchInput').on('input', applyFilter);
+    });
+  </script>
+{% endblock script %}

@@ -1,0 +1,198 @@
+{% extends "relotagrid/base.html" %}
+{% load static %}
+
+{% block title %} Page d'accueil de la grille de contrôle {% endblock title %}
+
+{% block css %}
+<style>
+  #searchInput {
+    width: 100%;
+    max-width: 500px;
+    margin: auto;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+
+  #pagination .btn {
+    background-color: #f0f0f0;
+    color: var(--bs-success);
+    border: 1px solid #ccc;
+    margin-right: 5px;
+    padding: 5px 14px;
+  }
+
+  #pagination .btn.active {
+    background-color: var(--bs-success);
+    color: white;
+    border-color: var(--bs-success);
+  }
+
+  .card {
+    border-radius: 12px;
+    background-color: #ffffff;
+    border: 1px solid #333;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.03);
+    padding: 10px;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+    border-color: #000;
+  }
+
+  .card-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+
+  #preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    transition: opacity 0.5s ease;
+  }
+
+  #preloader-logo {
+    width: 200px;
+    height: auto;
+    opacity: 0;
+    filter: grayscale(100%) brightness(200%);
+    transition: filter 1s ease, opacity 1s ease;
+  }
+
+  #preloader-logo.loaded {
+    filter: sepia(1) saturate(5) hue-rotate(190deg);
+    opacity: 1;
+  }
+</style>
+{% endblock css %}
+
+{% block content %}
+<!-- PRELOADER -->
+<div id="preloader">
+  <img src="{% static 'relotagrid/img/relota_img.png' %}" id="preloader-logo" alt="Logo Elota">
+</div>
+
+<!-- ESPACE NAVBAR -->
+<div style="height: 65px;"></div>
+
+<!-- TITRE -->
+<div class="container">
+  <div class="degrader-success-right py-2 rounded border-bottom border-success">
+    <h4>Les sites de <span class="text-success">contrôles</span></h4>
+  </div>
+  <p class="text-muted mt-1" id="date"></p>
+</div>
+
+<!-- BARRE DE RECHERCHE -->
+<div class="container my-4 text-center">
+  <input type="text" id="searchInput" class="form-control" placeholder="🔍 Rechercher un site...">
+</div>
+
+<!-- LISTE DES SITES -->
+<div class="container py-4">
+  {% if site.count == 0 %}
+    <p class="text-center">Pas de site pour l'instant</p>
+  {% else %}
+    <div id="phrasesContainer" class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-4 g-4">
+      {% for sites in site %}
+      <div class="col phrase-item">
+        <div class="card h-100 border-success shadow-sm">
+          <div class="card-body">
+            <h5 class="card-title text-success">
+              <i class="bi bi-buildings-fill"></i> {{ sites.nom }}
+            </h5>
+            <p class="card-text">Accéder à la grille de contrôle de ce site.</p>
+            <a href="{% url 'relotagrid:app_site' sites.slug %}" class="btn btn-success w-100">
+              <i class="bi bi-eye"></i> Consulter
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <div id="pagination" class="mt-4 text-center"></div>
+</div>
+{% endblock content %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  $(document).ready(function () {
+    const itemsPerPage = 6;
+    let currentPage = 1;
+
+    function paginateAndFilter() {
+      const searchTerm = $('#searchInput').val().toLowerCase();
+      const phrases = $('#phrasesContainer .phrase-item');
+      let filtered = [];
+
+      phrases.each(function () {
+        const content = $(this).find('.card-title').text().toLowerCase();
+        if (content.includes(searchTerm)) {
+          $(this).show();
+          filtered.push(this);
+        } else {
+          $(this).hide();
+        }
+      });
+
+      const totalPages = Math.ceil(filtered.length / itemsPerPage);
+      currentPage = Math.min(currentPage, totalPages) || 1;
+
+      phrases.hide();
+      $(filtered).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).show();
+
+      renderPagination(totalPages);
+    }
+
+    function renderPagination(totalPages) {
+      const pagination = $('#pagination');
+      pagination.empty();
+
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = $('<button class="btn btn-sm btn-outline-success me-1"></button>')
+          .text(i)
+          .toggleClass('active', i === currentPage)
+          .click(function () {
+            currentPage = i;
+            paginateAndFilter();
+          });
+        pagination.append(btn);
+      }
+    }
+
+    $('#searchInput').on('input', paginateAndFilter);
+    paginateAndFilter();
+  });
+
+  const today = new Date();
+  const day = String(today.getDate()).padStart(2, '0');
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const year = today.getFullYear();
+  document.getElementById('date').textContent = `📅 Nous sommes le ${day}/${month}/${year}`;
+</script>
+
+<script>
+  window.addEventListener('load', function () {
+    const preloader = document.getElementById('preloader');
+    const logo = document.getElementById('preloader-logo');
+
+    setTimeout(() => logo.classList.add('loaded'), 100);
+    setTimeout(() => preloader.style.opacity = '0', 1200);
+    setTimeout(() => preloader.style.display = 'none', 1700);
+  });
+</script>
+{% endblock script %}

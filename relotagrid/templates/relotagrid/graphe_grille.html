@@ -1,0 +1,208 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}
+  Performance mensuelle des agents - {{ site.nom }}
+{% endblock title %}
+
+{% block css %}
+  <style>
+    body {
+      padding-top: 70px;
+      background: #f9f9f9;
+    }
+    .container-chart {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
+    }
+    h1, h4 {
+      color: var(--bs-success);
+      font-weight: 700;
+    }
+    .form-inline {
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    select.form-select {
+      color: #212529;
+      background-color: #fff;
+    }
+    select.form-select option {
+      color: #212529;
+    }
+  </style>
+{% endblock css %}
+
+{% block content %}
+  <br/>
+  <br/>
+  <br/>
+  <br/>
+  <div class="container container-chart">
+    <h1 class="mb-4" style ="text-align : center">Tableau de bord - Contrôles qualité <span class="text-success">{{ site.nom }}</span></h1>
+
+    <!-- Formulaire de filtre -->
+    <form method="get" class="d-flex form-inline align-items-center justify-content-start mb-3">
+      <label for="date" class="form-label mb-0 me-2">Mois :</label>
+      <input type="month" name="mois_annee" id="mois_annee"
+             class="form-control form-control-sm w-auto me-4"
+             value="{{ annee|stringformat:'d' }}-{{ mois|stringformat:'02d' }}">
+      <button type="submit" class="btn btn-success btn-sm">Filtrer</button>
+    </form>
+    <br/>
+    <!-- Graphique en barres -->
+    <h3 class="mb-4" style = "text-align : center;"><span class="text-success">Performance mensuelle des agents du site </span></h3>
+    <canvas id="performanceChart" style="max-height: 400px;"></canvas>
+
+    <!-- Graphique en camembert -->
+    <br/>
+    <br/>
+    <h3 class="mb-4" style = "text-align : center;"><span class="text-success">Taux de conformité Global</span></h3>
+    <canvas id="pieChart" style="max-height: 300px; margin-top: 40px;"></canvas>
+  </div>
+  <br/>
+  <br/>
+{% endblock content %}
+
+{% block script %}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const labels = {{ labels|safe }};
+    const values = {{ values|safe }};
+    const backgroundColors = 'rgba(220,53,69,0.8)';
+
+    // Graphique en barres
+    const config = {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Performance (%)',
+            data: values,
+            backgroundColor: backgroundColors,
+            borderColor: 'rgba(165, 20, 25, 1)',
+            borderWidth: 1,
+            borderRadius: 4,
+            maxBarThickness: 40
+          },
+          {
+            label: 'Seuil requis (70%)',
+            data: Array(labels.length).fill(70),
+            type: 'line',
+            borderColor: 'rgba(255, 205, 86, 1)',
+            borderDash: [6, 6],
+            borderWidth: 3,
+            fill: false,
+            pointRadius: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        animation: {
+          duration: 700,
+          easing: 'easeOutQuart'
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Performance (%)'
+            },
+            ticks: {
+              stepSize: 10,
+              callback: val => val + '%'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Agents'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              font: { size: 14, weight: '600' }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ctx.parsed.y + '%'
+            }
+          }
+        }
+      }
+    };
+
+    new Chart(ctx, config);
+
+    // Graphique en camembert (doughnut) avec taux en %
+
+    const seuil = 70;
+    let superieur = 0;
+    let inferieur = 0;
+
+    values.forEach(val => {
+      if(val >= seuil) superieur++;
+      else inferieur++;
+    });
+
+    const total = superieur + inferieur;
+
+    // Calcul des taux en pourcentage (float arrondi à 1 décimale)
+    const tauxSuperieur = total > 0 ? (superieur / total) * 100 : 0;
+    const tauxInferieur = total > 0 ? (inferieur / total) * 100 : 0;
+
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+
+    const pieConfig = {
+      type: 'doughnut',
+      data: {
+        labels: ['≥ 70% (Conforme)', '< 70% (non conforme)'],
+        datasets: [{
+          data: [tauxSuperieur.toFixed(1), tauxInferieur.toFixed(1)],
+          backgroundColor: ['rgba(40, 167, 69, 0.8)', 'rgba(220, 53, 69, 0.8)'],
+          borderColor: ['rgba(40, 167, 69, 1)', 'rgba(220, 53, 69, 1)'],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: {
+          duration: 700,
+          easing: 'easeOutQuart'
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              font: { size: 14, weight: '600' }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => {
+                const label = ctx.label;
+                const value = ctx.parsed;
+                return `${label}: ${value}%`;
+              }
+            }
+          }
+        }
+      }
+    };
+
+    new Chart(pieCtx, pieConfig);
+
+  </script>
+{% endblock script %}

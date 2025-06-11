@@ -1,0 +1,225 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}
+  Ajouter un produit
+{% endblock title %}
+
+{% block css %}
+<style>
+  .form-section {
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  .table th, .table td {
+    vertical-align: middle;
+  }
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 1rem;
+  }
+  .pagination a, .pagination span {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #dee2e6;
+    color: #0d6efd;
+    text-decoration: none;
+    border-radius: 0.25rem;
+  }
+  .pagination span.current {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+  }
+  .pagination a:hover {
+    background-color: #e9ecef;
+  }
+  @media (max-width: 576px) {
+    .form-section {
+      padding: 1rem;
+    }
+  }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div style="height: 65px;"></div>
+
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="container py-5">
+  <h3 class="mb-4 text-success text-center">
+    {% if produit_modifie %}Modifier un produit{% else %}Ajouter un nouveau produit{% endif %}
+  </h3>
+
+  <div class="form-section mb-5">
+    <form method="post" action="{% url 'gestion_stock:enregistrer_produit' %}">
+      {% csrf_token %}
+      {% if produit_modifie %}
+        <input type="hidden" name="produit_id" value="{{ produit_modifie.id }}">
+      {% endif %}
+      <div class="mb-3">
+        <label for="nom" class="form-label">Nom du produit</label>
+        <input type="text" class="form-control" id="nom" name="nom" required placeholder="Ex: Nettoyant Vitres" value="{{ produit_modifie.nom|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="conditionnement" class="form-label">Conditionnement</label>
+        <input type="text" class="form-control" id="conditionnement" name="conditionnement" placeholder="Ex: Bidon de 5 litres" value="{{ produit_modifie.conditionnement|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="quantite_limite" class="form-label">Quantité limite (alerte)</label>
+        <input type="number" class="form-control" id="quantite_limite" name="quantite_limite" required placeholder="Ex: 10" value="{{ produit_modifie.quantite_limite|default:'' }}">
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'gestion_stock:enregistrer_produit' %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Annuler
+        </a>
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-save"></i> {% if produit_modifie %}Modifier{% else %}Enregistrer{% endif %} le produit
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <h4 class="mb-3 text-center">Etat des besoins mensuels</h4>
+
+  <div class="mb-3">
+    <input type="text" class="form-control" id="searchInput" placeholder="Rechercher un produit...">
+  </div>
+
+  {% if produits %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover" id="produitsTable">
+        <thead class="table-light">
+          <tr>
+            <th>Nom</th>
+            <th>Conditionnement</th>
+            <th>Quantité limite</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for produit in produits %}
+            {% if produit_modifie and produit_modifie.id == produit.id %}
+              <tr>
+                <form method="post" action="{% url 'gestion_stock:enregistrer_produit' %}">
+                  {% csrf_token %}
+                  <td><input type="text" name="nom" value="{{ produit.nom }}" class="form-control" required></td>
+                  <td><input type="text" name="conditionnement" value="{{ produit.conditionnement }}" class="form-control"></td>
+                  <td><input type="number" name="quantite_limite" value="{{ produit.quantite_limite }}" class="form-control" required></td>
+                  <td>
+                    {% if request.user.is_superuser %}
+                      <input type="hidden" name="produit_id" value="{{ produit.id }}">
+                      <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                      </button>
+                    {% else %}
+                      <span class="text-muted">Aucune action</span>
+                    {% endif %}
+                  </td>
+                </form>
+              </tr>
+            {% else %}
+              <tr>
+                <td>{{ produit.nom }}</td>
+                <td>{{ produit.conditionnement }}</td>
+                <td>{{ produit.quantite_limite }}</td>
+                <td>
+                  {% if request.user.is_superuser %}
+                    <a href="?modifier={{ produit.id }}" class="btn btn-sm btn-warning">
+                      <i class="bi bi-pencil-square"></i> Modifier
+                    </a>
+
+                    <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ produit.id }}">
+                      <i class="bi bi-trash"></i> Supprimer
+                    </button>
+
+                    <!-- Modale Bootstrap -->
+                    <div class="modal fade" id="deleteModal{{ produit.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ produit.id }}" aria-hidden="true">
+                      <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                          <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title" id="deleteModalLabel{{ produit.id }}">Confirmer la suppression</h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                          </div>
+                          <div class="modal-body">
+                            Voulez-vous vraiment supprimer le produit <strong>{{ produit.nom }}</strong> ?
+                          </div>
+                          <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                            <a href="{% url 'gestion_stock:supprimer_produit' produit.id %}" class="btn btn-danger">Supprimer</a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  {% else %}
+                    <span class="text-muted">Aucune action</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endif %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <nav aria-label="Pagination produits">
+      <div class="pagination">
+        {% if produits.has_previous %}
+          <a href="?page=1{% if produit_modifie %}&modifier={{ produit_modifie.id }}{% endif %}" aria-label="Première page">&laquo;</a>
+          <a href="?page={{ produits.previous_page_number }}{% if produit_modifie %}&modifier={{ produit_modifie.id }}{% endif %}" aria-label="Page précédente">‹</a>
+        {% endif %}
+
+        {% for num in produits.paginator.page_range %}
+          {% if produits.number == num %}
+            <span class="current" aria-current="page">{{ num }}</span>
+          {% elif num > produits.number|add:'-3' and num < produits.number|add:'3' %}
+            <a href="?page={{ num }}{% if produit_modifie %}&modifier={{ produit_modifie.id }}{% endif %}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if produits.has_next %}
+          <a href="?page={{ produits.next_page_number }}{% if produit_modifie %}&modifier={{ produit_modifie.id }}{% endif %}" aria-label="Page suivante">›</a>
+          <a href="?page={{ produits.paginator.num_pages }}{% if produit_modifie %}&modifier={{ produit_modifie.id }}{% endif %}" aria-label="Dernière page">&raquo;</a>
+        {% endif %}
+      </div>
+    </nav>
+
+  {% else %}
+    <div class="alert alert-info text-center">
+      Aucun produit enregistré.
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}
+
+{% block script %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("searchInput");
+    const rows = document.querySelectorAll("#produitsTable tbody tr");
+
+    input.addEventListener("keyup", function () {
+      const query = this.value.toLowerCase();
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? "" : "none";
+      });
+    });
+  });
+</script>
+{% endblock script %}

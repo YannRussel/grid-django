@@ -1,0 +1,185 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}Graphe de retard mensuel ..{% endblock %}
+
+{% block css %}
+  <style>
+    body {
+      background-color: #f8f9fa;
+    }
+    .text-relota {
+      color: #123c69 !important;
+    }
+    .bg-relota {
+      background-color: #123c69 !important;
+    }
+    .btn-relota {
+      background-color: #123c69;
+      color: white;
+    }
+    .btn-relota:hover {
+      background-color: #0f2e50;
+      color: white;
+    }
+    canvas {
+      width: 100% !important;
+      height: 400px !important;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #bloc-a-imprimer, #bloc-a-imprimer * {
+        visibility: visible;
+      }
+      #bloc-a-imprimer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      .navbar, .btn, .bi-printer-fill {
+        display: none !important;
+      }
+    }
+  </style>
+{% endblock css %}
+
+{% block content %}
+   <div style="height: 80px;"></div>
+
+  <div class="container">
+    <h4 class="mb-4 border-bottom pb-2 text-relota">Graphique des retards - {{ date_affichee|date:"d/m/Y" }}</h4>
+
+    <div class="mb-3">
+      <a href="{% url 'gestion_personnel:liste_retards_par_date' site.slug %}?date={{ date_affichee|date:'Y-m-d' }}" class="btn btn-relota">
+        <i class="bi bi-arrow-left-circle me-2"></i>Retour au tableau
+      </a>
+      <button class="btn btn-secondary ms-2" onclick="window.print()">
+        <i class="bi bi-printer-fill me-2"></i>Imprimer PDF
+      </button>
+    </div>
+
+    <div id="bloc-a-imprimer">
+      <div class="row align-items-stretch">
+        <!-- GRAPHE -->
+        <div class="col-md-7 mb-4">
+          <canvas id="retardsChart"></canvas>
+        </div>
+
+        <!-- TABLEAU -->
+        <div class="col-md-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-relota text-white fw-bold">Récapitulatif mensuel</div>
+            <div class="card-body p-0">
+              <table class="table table-bordered table-striped table-hover m-0 text-center align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>#</th>
+                    <th>Agent</th>
+                    <th>Retard (min)</th>
+                  </tr>
+                </thead>
+                <tbody id="table-retards">
+                  <tr><td colspan="3" class="text-muted">Chargement en cours...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{% endblock content %}
+
+{% block script %}
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const dateParam = new URLSearchParams(window.location.search).get("date");
+      fetch("{% url 'gestion_personnel:donnees_retards_par_mois' site.slug %}?date=" + dateParam)
+        .then(response => response.json())
+        .then(data => {
+          const ctx = document.getElementById('retardsChart').getContext('2d');
+
+          const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+          gradient.addColorStop(0, '#123c69');
+          gradient.addColorStop(1, '#a0b8d5');
+
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: data.labels,
+              datasets: [{
+                label: 'Minutes de retard',
+                data: data.data,
+                backgroundColor: gradient,
+                borderColor: '#123c69',
+                borderWidth: 1,
+                borderRadius: 8,
+                hoverBackgroundColor: '#0f2e50',
+              }]
+            },
+            options: {
+              responsive: true,
+              animation: { duration: 1000 },
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  backgroundColor: '#123c69',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  callbacks: {
+                    label: context => `${context.raw} minute(s)`
+                  }
+                }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: 'Minutes de retard',
+                    color: '#123c69',
+                    font: { weight: 'bold' }
+                  }
+                },
+                x: {
+                  title: {
+                    display: true,
+                    text: 'Agents',
+                    color: '#123c69',
+                    font: { weight: 'bold' }
+                  },
+                  ticks: {
+                    maxRotation: 45,
+                    minRotation: 45
+                  }
+                }
+              }
+            }
+          });
+
+          // Remplir le tableau
+          const tbody = document.getElementById("table-retards");
+          tbody.innerHTML = "";
+          data.labels.forEach((label, index) => {
+            const ligne = `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${label}</td>
+                <td>${data.data[index]}</td>
+              </tr>`;
+            tbody.innerHTML += ligne;
+          });
+        })
+        .catch(error => {
+          console.error("Erreur de chargement des données :", error);
+          document.getElementById("table-retards").innerHTML = '<tr><td colspan="3" class="text-danger">Erreur de chargement</td></tr>';
+        });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock script %}
+ 

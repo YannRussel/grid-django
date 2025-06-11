@@ -1,0 +1,211 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}
+  Livraisons – {{ site.nom }}
+{% endblock title %}
+
+{% block css %}
+<style>
+  .form-section {
+    background-color: #f8f9fa;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  .table th, .table td {
+    vertical-align: middle;
+  }
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 0.3rem;
+    margin-top: 1rem;
+  }
+  .pagination a, .pagination span {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #dee2e6;
+    color: #0d6efd;
+    text-decoration: none;
+    border-radius: 0.25rem;
+  }
+  .pagination span.current {
+    background-color: #0d6efd;
+    color: white;
+    border-color: #0d6efd;
+  }
+  .pagination a:hover {
+    background-color: #e9ecef;
+  }
+</style>
+{% endblock css %}
+
+{% block content %}
+<div style="height: 65px;"></div>
+
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<div class="container py-5">
+  <h3 class="mb-4 text-success text-center">
+    <i class="bi bi-box-seam"></i>
+    {% if livraison_modifiee %}Modifier une livraison{% else %}Ajouter une livraison{% endif %}
+    – {{ site.nom }}
+  </h3>
+
+  <div class="form-section mb-5">
+    <form method="post">
+      {% csrf_token %}
+      {% if livraison_modifiee %}
+        <input type="hidden" name="livraison_id" value="{{ livraison_modifiee.id }}">
+      {% endif %}
+
+      <div class="mb-3">
+        <label for="produit" class="form-label">Produit</label>
+        <select class="form-select" id="produit" name="produit" required>
+          <option value="" disabled {% if not livraison_modifiee %}selected{% endif %}>Sélectionnez un produit</option>
+          {% for produit in produits %}
+            <option value="{{ produit.id }}" {% if livraison_modifiee and livraison_modifiee.produit.id == produit.id %}selected{% endif %}>
+              {{ produit.nom }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label for="quantite" class="form-label">Quantité livrée</label>
+        <input type="number" class="form-control" id="quantite" name="quantite" required
+               placeholder="Ex: 25" value="{{ livraison_modifiee.quantite|default:'' }}">
+      </div>
+
+      <div class="mb-3">
+        <label for="date_livraison" class="form-label">Date de livraison</label>
+        <input type="date" class="form-control" id="date_livraison" name="date_livraison" required
+               value="{{ livraison_modifiee.date_livraison|date:'Y-m-d' }}">
+      </div>
+
+      <div class="d-flex justify-content-between">
+        <a href="{% url 'gestion_stock:enregistrer_livraison' slug=site.slug %}" class="btn btn-secondary">
+          <i class="bi bi-arrow-left-circle"></i> Annuler
+        </a>
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-save"></i> {% if livraison_modifiee %}Modifier{% else %}Enregistrer{% endif %} la livraison
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Formulaire de filtre par mois -->
+  <form method="get" class="row g-3 mb-4" action="{% url 'gestion_stock:enregistrer_livraison' site.slug %}">
+    <div class="col-md-5">
+      <label for="mois" class="form-label">Filtrer par mois</label>
+      <input type="month" id="mois" name="mois" class="form-control" value="{{ mois_selectionne|default:'' }}">
+    </div>
+    <div class="col-md-3 d-flex align-items-end">
+      <button type="submit" class="btn btn-primary w-100">
+        <i class="bi bi-funnel"></i> Filtrer
+      </button>
+    </div>
+    {% if mois_selectionne %}
+      <div class="col-md-2 d-flex align-items-end">
+        <a href="?" class="btn btn-outline-secondary w-100">
+          Réinitialiser
+        </a>
+      </div>
+    {% endif %}
+  </form>
+
+  <h4 class="mb-3 text-center">Livraisons pour {{ site.nom }}</h4>
+
+  {% if livraisons %}
+    <div class="table-responsive">
+      <table class="table table-bordered table-hover">
+        <thead class="table-light">
+          <tr>
+            <th>Produit</th>
+            <th>Quantité</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for livraison in livraisons %}
+            <tr>
+              <td>{{ livraison.produit.nom }}</td>
+              <td>{{ livraison.quantite_livree }}</td>
+              <td>{{ livraison.date_livraison|date:"d/m/Y" }}</td>
+              <td>
+                {% if request.user.is_superuser %}
+                  <a href="?modifier={{ livraison.id }}" class="btn btn-sm btn-warning">
+                    <i class="bi bi-pencil-square"></i> Modifier
+                  </a>
+
+                  <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ livraison.id }}">
+                    <i class="bi bi-trash"></i> Supprimer
+                  </button>
+
+                  <!-- Modal de confirmation -->
+                  <div class="modal fade" id="deleteModal{{ livraison.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ livraison.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                      <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                          <h5 class="modal-title">Confirmer la suppression</h5>
+                          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                        </div>
+                        <div class="modal-body">
+                          Supprimer la livraison du <strong>{{ livraison.date_livraison|date:"d/m/Y" }}</strong>
+                          du produit <strong>{{ livraison.produit.nom }}</strong> ?
+                        </div>
+                        <div class="modal-footer">
+                          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                          <a href="{% url 'gestion_stock:supprimer_livraison' livraison.id %}" class="btn btn-danger">Supprimer</a>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                {% else %}
+                  Aucune action
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Pagination livraisons">
+      <div class="pagination">
+        {% if livraisons.has_previous %}
+          <a href="?page=1{% if livraison_modifiee %}&modifier={{ livraison_modifiee.id }}{% endif %}">&laquo;</a>
+          <a href="?page={{ livraisons.previous_page_number }}{% if livraison_modifiee %}&modifier={{ livraison_modifiee.id }}{% endif %}">&lsaquo;</a>
+        {% endif %}
+
+        {% for num in livraisons.paginator.page_range %}
+          {% if livraisons.number == num %}
+            <span class="current">{{ num }}</span>
+          {% elif num > livraisons.number|add:'-3' and num < livraisons.number|add:'3' %}
+            <a href="?page={{ num }}{% if livraison_modifiee %}&modifier={{ livraison_modifiee.id }}{% endif %}">{{ num }}</a>
+          {% endif %}
+        {% endfor %}
+
+        {% if livraisons.has_next %}
+          <a href="?page={{ livraisons.next_page_number }}{% if livraison_modifiee %}&modifier={{ livraison_modifiee.id }}{% endif %}">&rsaquo;</a>
+          <a href="?page={{ livraisons.paginator.num_pages }}{% if livraison_modifiee %}&modifier={{ livraison_modifiee.id }}{% endif %}">&raquo;</a>
+        {% endif %}
+      </div>
+    </nav>
+  {% else %}
+    <div class="alert alert-info text-center">
+      Aucune livraison enregistrée pour ce site{% if mois_selectionne %} durant {{ mois_selectionne }}{% endif %}.
+    </div>
+  {% endif %}
+</div>
+{% endblock content %}

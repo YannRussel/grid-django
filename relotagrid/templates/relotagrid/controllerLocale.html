@@ -1,0 +1,208 @@
+{% extends "relotagrid/base.html" %}
+
+{% block title %}
+
+{% endblock title %}
+
+{% block css %}
+   <style>
+    .phrase-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 10px;
+      margin-bottom: 5px;
+    }
+    .phrase-item:hover {
+      background-color: #e0eff3;
+      transition: .5s ease-in-out;
+    }
+    .spinner-grow {
+      width: 15px;
+      height: 15px;
+    }
+    .consulter-btn {
+      margin-right: 2px;
+    }
+    .phrase-content {
+      flex-grow: 1;
+      width: 70%;
+    }
+    #searchInput {
+      width: 70%;
+    }
+    #pagination .btn {
+      background-color: #f0f0f0;
+      color: var(--bs-success);
+      border: 1px solid #ccc;
+      margin-right: 5px;
+      padding: 5px 14px;
+    }
+    #pagination .btn.active {
+      background-color: var(--bs-success);
+      color: white;
+      border-color: var(--bs-success);
+    }
+    @media screen and (max-width: 768px) {
+      .text_phone {
+        display: none;
+      }
+    }
+  </style>
+{% endblock css %}
+
+{% block content %}
+  
+  <div style="height: 65px;"></div>
+
+  <!-- EN-TÊTE LOCAL -->
+  <div class="container">
+    <div class="degrader-success-right py-2 rounded border-bottom border-successs">
+      <h4>Type de Local : <span class="text-success">{{ local.local_type }}</span></h4>
+    </div>
+    <span id="date"></span> / Site <span class="text-success enGrasMax">{{ local.site }}</span>
+  </div>
+
+  <!-- FORMULAIRE DE CONTRÔLE -->
+  <div class="container bg-blanc">
+    <div class="row">
+      <!-- Formulaire -->
+      <div class="col-lg-8">
+        <center>
+          <input type="text" id="searchInput" class="form-control my-3" placeholder="Rechercher un élément de contrôle">
+          <p class="text-center border-bottom pb-2">FICHE DE CONTRÔLE</p>
+        </center>
+
+        <div class="container">
+          <form action="{% url 'relotagrid:enregistrer_grille' local.id %}" id="formulaire_de_control" method="post">
+            {% csrf_token %}
+            <div id="phrasesContainer">
+
+              <!-- Sélecteur d'agent -->
+              <select name="agent" class="form-select my-3" required>
+                  <option value="" disabled selected>-- Sélectionnez un agent --</option>
+                  {% for agent in local.site.agents.all %}
+                    <option value="{{ agent.id }}">{{ agent.nom }} {{ agent.prenom }}</option>
+                  {% empty %}
+                    <option disabled>Aucun agent disponible</option>
+                  {% endfor %}
+             </select>
+
+              <!-- Éléments de contrôle -->
+              {% for controle in local.element_controle.all %}
+                <input type="hidden" name="controle_ids[]" value="{{ controle.id }}">
+                <div class="phrase-item shadow-sm p-3 mb-4 bg-light rounded">
+                  <div class="phrase-content">
+                    <div class="fw-bold text-success text-capitalize mb-3">{{ controle.libelle }}</div>
+
+                    {% for critere in controle.critere.all %}
+                      <div class="d-flex flex-wrap align-items-center justify-content-between border rounded p-2 mb-2">
+                        <div class="form-check">
+                          <input class="form-check-input" type="checkbox" id="critere_{{ critere.id }}" name="criteres_{{ critere.id }}">
+                          <label class="form-check-label fw-bold" for="critere_{{ critere.id }}">{{ critere.critere }}</label>
+                        </div>
+
+                        <div class="d-flex align-items-center">
+                          <label for="Note_{{ critere.id }}" class="form-label mb-0 me-2">Note :</label>
+                          <select id="Note_{{ critere.id }}" name="note_{{ critere.id }}" class="form-select form-select-sm w-auto">
+                            <option value="" selected disabled>--</option>
+                            <option value="0">0</option>
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                          </select>
+                        </div>
+                      </div>
+                    {% empty %}
+                      <p class="text-muted fst-italic">Aucun critère défini pour cet élément.</p>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+
+            <div id="pagination" class="mt-5 text-center"></div>
+            <br>
+            <input class="btn btn-success w-100" type="submit" name="controlLocal" value="Valider le contrôle" />
+          </form>
+        </div>
+        <br><br><br>
+      </div>
+
+      <!-- Informations sur le site -->
+      <div class="col-lg-4 bg-light shadow-sm p-2 px-5">
+        <h5 class="text-center text-secondary">Information du site</h5>
+        <p class="border-bottom pb-1">Site : <span class="enGrasMax">BEAC</span></p>
+        <p class="text-justify">
+          Structure de contrôle et de régulation dans l’employabilité des jeunes pour le bien-être de la nation
+        </p>
+        <p class="border-bottom pb-1">Nombre de locales : <span class="enGrasMax text-success">20</span></p>
+        <center>
+          <i class="bi bi-house-gear-fill text-success" style="font-size: 20vh;"></i>
+          <p><a href="dash_apropos.html" class="link text-info">Consulter la note d'utilisation</a></p>
+        </center>
+      </div>
+    </div>
+  </div>
+
+{% endblock content %}
+
+{% block script %}
+    <!-- SCRIPTS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    $(document).ready(function () {
+      const itemsPerPage = 5;
+      let currentPage = 1;
+
+      function paginateAndFilter() {
+        const searchTerm = $('#searchInput').val().toLowerCase();
+        const phrases = $('#phrasesContainer .phrase-item');
+        let filtered = [];
+
+        phrases.each(function () {
+          const content = $(this).find('.phrase-content').text().toLowerCase();
+          if (content.includes(searchTerm)) {
+            $(this).show();
+            filtered.push(this);
+          } else {
+            $(this).hide();
+          }
+        });
+
+        const totalPages = Math.ceil(filtered.length / itemsPerPage);
+        currentPage = Math.min(currentPage, totalPages) || 1;
+
+        phrases.hide();
+        $(filtered).slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).show();
+
+        renderPagination(totalPages);
+      }
+
+      function renderPagination(totalPages) {
+        const pagination = $('#pagination');
+        pagination.empty();
+
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = $('<button class="btn btn-sm btn-outline-success me-1"></button>')
+            .text(i)
+            .toggleClass('active', i === currentPage)
+            .click(function () {
+              currentPage = i;
+              paginateAndFilter();
+            });
+          pagination.append(btn);
+        }
+      }
+
+      $('#searchInput').on('input', paginateAndFilter);
+      paginateAndFilter();
+    });
+
+    // Affichage de la date
+    const today = new Date();
+    const formattedDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+    document.getElementById('date').textContent = `Nous sommes le ${formattedDate}`;
+  </script>
+
+{% endblock script %}
