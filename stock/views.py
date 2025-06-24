@@ -183,7 +183,7 @@ def enregistrer_livraison(request, slug):
     site = get_object_or_404(Site, slug=slug)
     livraison_modifiee = None
 
-    # Édition ?
+    # Si on édite une livraison existante
     if 'modifier' in request.GET:
         livraison_id = request.GET.get('modifier')
         livraison_modifiee = get_object_or_404(LivraisonMensuelle, id=livraison_id, site=site)
@@ -199,21 +199,24 @@ def enregistrer_livraison(request, slug):
             return redirect('gestion_stock:enregistrer_livraison', slug=slug)
 
         try:
-            date_livraison = datetime.strptime(date_livraison_str, "%Y-%m-%d").date()
-            mois = date(date_livraison.year, date_livraison.month, 1)
-        except ValueError:
+            # On récupère YYYY-MM venant du input type="month"
+            annee, mois_int = map(int, date_livraison_str.split('-'))
+            mois = date(annee, mois_int, 1)
+        except Exception:
             messages.error(request, "Format de date invalide.")
             return redirect('gestion_stock:enregistrer_livraison', slug=slug)
 
         produit = get_object_or_404(Produit, id=produit_id)
 
         if livraison_id:
+            # Modification d'une livraison
             livraison = get_object_or_404(LivraisonMensuelle, id=livraison_id, site=site)
             livraison.produit = produit
             livraison.quantite_livree = quantite
             livraison.mois = mois
             messages.success(request, "La livraison a été modifiée avec succès.")
         else:
+            # Nouvelle livraison
             livraison = LivraisonMensuelle.objects.create(
                 produit=produit,
                 site=site,
@@ -225,20 +228,22 @@ def enregistrer_livraison(request, slug):
         livraison.save()
         return redirect('gestion_stock:enregistrer_livraison', slug=slug)
 
-    # Affichage des livraisons du site
+    # Liste des livraisons du site
     livraisons = LivraisonMensuelle.objects.filter(site=site).order_by('-mois')
 
-    # Filtrage par mois depuis la requête ou la livraison en cours d'édition
+    # Filtrage par mois depuis le GET ou la livraison en édition
     mois_selectionne_str = request.GET.get('mois') or (livraison_modifiee.mois.strftime("%Y-%m") if livraison_modifiee else now().strftime("%Y-%m"))
+
     try:
         annee, mois_int = map(int, mois_selectionne_str.split('-'))
         mois_filtre = date(annee, mois_int, 1)
     except ValueError:
         mois_filtre = now().date().replace(day=1)
 
+    # Filtrage des livraisons pour le mois sélectionné
     livraisons = livraisons.filter(mois__year=mois_filtre.year, mois__month=mois_filtre.month)
 
-    # Exclure les produits déjà livrés ce mois pour ce site (sauf si on est en mode édition)
+    # Exclure les produits déjà livrés ce mois-ci (sauf si on modifie)
     produits_deja_livres_ids = LivraisonMensuelle.objects.filter(
         site=site,
         mois=mois_filtre
@@ -265,9 +270,8 @@ def enregistrer_livraison(request, slug):
         'now': now(),
         'mois_selectionne': mois_filtre.strftime('%Y-%m'),
     }
+
     return render(request, 'stock/livraisons.html', context)
-
-
 
 @login_required
 def supprimer_livraison(request, livraison_id):

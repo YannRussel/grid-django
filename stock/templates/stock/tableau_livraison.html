@@ -2,7 +2,7 @@
 
 {% block title %}
   Livraisons de stock pour le site {{ site.nom }}
-{% endblock title %}
+{% endblock %}
 
 {% block css %}
 <style>
@@ -29,10 +29,21 @@
     }
   }
 </style>
-{% endblock css %}
+{% endblock %}
 
 {% block content %}
 <div style="height: 65px;"></div>
+
+{% if messages %}
+  <div class="container mt-3">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
 
 <div class="container py-5">
   <h3 class="mb-4 text-success text-center">Gestion des Stocks – {{ site.nom }}</h3>
@@ -52,9 +63,8 @@
     </div>
 
     <form method="get" class="d-flex filter-form align-items-center" action="{% url 'gestion_stock:livraisons_par_site' site.slug %}">
-      {% csrf_token %}
       <input type="month" name="mois" id="mois" class="form-control me-2" value="{{ mois_selectionne|default:'' }}">
-      <button type="submit" class="btn btn-outline-primary btn-filter">Filtrer </button>
+      <button type="submit" class="btn btn-outline-primary btn-filter">Filtrer</button>
     </form>
   </div>
 
@@ -87,4 +97,26 @@
     </div>
   {% endif %}
 </div>
-{% endblock content %}
+{% endblock %}
+
+{% block script %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+
+    // Auto-dismiss alerts after 2 sec
+    setTimeout(function () {
+      const alert = document.querySelector(".alert");
+      if (alert) {
+        alert.classList.add("fade");
+        alert.classList.remove("show");
+        setTimeout(() => {
+          alert.remove();
+        }, 500);
+      }
+    }, 2000);
+
+  });
+</script>
+{% endblock %}

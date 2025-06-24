@@ -2,7 +2,7 @@
 
 {% block title %}
   Ajouter un produit
-{% endblock title %}
+{% endblock %}
 
 {% block css %}
 <style>
@@ -42,7 +42,7 @@
     }
   }
 </style>
-{% endblock css %}
+{% endblock %}
 
 {% block content %}
 <div style="height: 65px;"></div>
@@ -161,7 +161,11 @@
                           </div>
                           <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                            <a href="{% url 'gestion_stock:supprimer_produit' produit.id %}" class="btn btn-danger">Supprimer</a>
+                            
+                            <form method="post" action="{% url 'gestion_stock:supprimer_produit' produit.id %}">
+                              {% csrf_token %}
+                              <button type="submit" class="btn btn-danger">Supprimer</button>
+                            </form>
                           </div>
                         </div>
                       </div>
@@ -205,11 +209,27 @@
     </div>
   {% endif %}
 </div>
-{% endblock content %}
+{% endblock %}
 
 {% block script %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+
+    // Auto-dismiss alerts after 2 seconds
+    setTimeout(function () {
+      const alert = document.querySelector(".alert");
+      if (alert) {
+        alert.classList.add("fade");
+        alert.classList.remove("show");
+        setTimeout(() => {
+          alert.remove();
+        }, 500);
+      }
+    }, 2000);
+
+    // Live search
     const input = document.getElementById("searchInput");
     const rows = document.querySelectorAll("#produitsTable tbody tr");
 
@@ -220,6 +240,7 @@
         row.style.display = text.includes(query) ? "" : "none";
       });
     });
+
   });
 </script>
-{% endblock script %}
+{% endblock %}

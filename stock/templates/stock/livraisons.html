@@ -82,13 +82,13 @@
       <div class="mb-3">
         <label for="quantite" class="form-label">Quantité livrée</label>
         <input type="number" class="form-control" id="quantite" name="quantite" required
-               placeholder="Ex: 25" value="{{ livraison_modifiee.quantite|default:'' }}">
+               placeholder="Ex: 25" value="{{ livraison_modifiee.quantite_livree|default:'' }}">
       </div>
 
       <div class="mb-3">
-        <label for="date_livraison" class="form-label">Date de livraison</label>
-        <input type="date" class="form-control" id="date_livraison" name="date_livraison" required
-               value="{{ livraison_modifiee.date_livraison|date:'Y-m-d' }}">
+        <label for="date_livraison" class="form-label">Mois de livraison</label>
+        <input type="month" class="form-control" id="date_livraison" name="date_livraison" required
+               value="{{ livraison_modifiee.mois|date:'Y-m' }}">
       </div>
 
       <div class="d-flex justify-content-between">
@@ -131,7 +131,7 @@
           <tr>
             <th>Produit</th>
             <th>Quantité</th>
-            <th>Date</th>
+            <th>Mois</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -140,7 +140,7 @@
             <tr>
               <td>{{ livraison.produit.nom }}</td>
               <td>{{ livraison.quantite_livree }}</td>
-              <td>{{ livraison.date_livraison|date:"d/m/Y" }}</td>
+              <td>{{ livraison.mois|date:"F Y" }}</td>
               <td>
                 {% if request.user.is_superuser %}
                   <a href="?modifier={{ livraison.id }}" class="btn btn-sm btn-warning">
@@ -160,7 +160,7 @@
                           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
                         </div>
                         <div class="modal-body">
-                          Supprimer la livraison du <strong>{{ livraison.date_livraison|date:"d/m/Y" }}</strong>
+                          Supprimer la livraison de <strong>{{ livraison.mois|date:"F Y" }}</strong>
                           du produit <strong>{{ livraison.produit.nom }}</strong> ?
                         </div>
                         <div class="modal-footer">
@@ -209,3 +209,17 @@
   {% endif %}
 </div>
 {% endblock content %}
+
+{% block script %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Auto dismiss message alerts after 2 seconds
+    setTimeout(() => {
+      document.querySelectorAll(".alert").forEach(alert => {
+        alert.classList.remove("show");
+        alert.classList.add("fade");
+      });
+    }, 2000);
+  });
+</script>
+{% endblock script %}
