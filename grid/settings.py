@@ -53,6 +53,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
+    'cloudinary_storage',
+    'cloudinary',
     'django.contrib.staticfiles',
 ]
 
@@ -144,3 +146,13 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'yann.russel.webwriter@gmail.com'  # à remplacer
 EMAIL_HOST_PASSWORD = 'cmbfhstnejyegjiu'    # mot de passe d'application à remplacer
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+# Configuration de cloudynary
+
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.getenv('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.getenv('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.getenv('CLOUDINARY_API_SECRET'),}
