@@ -2,14 +2,19 @@ services:
   - type: web
     name: grid
     env: python
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn grid.wsgi:application"
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn grid.wsgi:application
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: grid.settings
-      - key: DJANGO_SECRET_KEY
+      - key: SECRET_KEY
         generateValue: true
-      - key: ALLOWED_HOSTS
-        value: grid.onrender.com
       - key: DEBUG
-        value: false
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: "grid-django.onrender.com,www.qhs360.com,qhs360.com,www.qhs360.fr,qhs360.fr"
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
