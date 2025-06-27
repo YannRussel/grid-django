@@ -27,12 +27,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-vy(*xi2@6+@j@m%lba$84nw0(f@#eua2++wud+#9%i4#5$usb2'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+ALLOWED_HOSTS = ['grid-django.onrender.com', 'https://www.qhs360.com', 'https://www.qhs360.fr']
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://aa47-2c0f-ef58-1687-ff00-1102-1235-404c-a719.ngrok-free.app"
+    "https://www.qhs360.com"
 ]
 
 
