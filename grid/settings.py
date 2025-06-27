@@ -30,10 +30,14 @@ SECRET_KEY = 'django-insecure-vy(*xi2@6+@j@m%lba$84nw0(f@#eua2++wud+#9%i4#5$usb2
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = ['grid-django.onrender.com', 'https://www.qhs360.com', 'https://www.qhs360.fr']
+ALLOWED_HOSTS = ['grid-django.onrender.com', 'www.qhs360.com', 'qhs360.com', 'www.qhs360.fr', 'qhs360.fr']
+
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://www.qhs360.com"
+    "https://www.qhs360.com",
+    "https://qhs360.com",
+    "https://www.qhs360.fr",
+    "https://qhs360.fr",
 ]
 
 
