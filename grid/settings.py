@@ -32,7 +32,6 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = ['grid-django.onrender.com', 'www.qhs360.com', 'qhs360.com', 'www.qhs360.fr', 'qhs360.fr']
 
-
 CSRF_TRUSTED_ORIGINS = [
     "https://www.qhs360.com",
     "https://qhs360.com",
@@ -59,13 +58,13 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # placé ici, juste après SecurityMiddleware
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 ROOT_URLCONF = 'grid.urls'
@@ -89,8 +88,6 @@ WSGI_APPLICATION = 'grid.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 if os.getenv("RENDER"):
     DATABASES = {
         'default': dj_database_url.config(default='sqlite:///db.sqlite3')
@@ -104,70 +101,46 @@ else:
     }
 
 # Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',},
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'Fr-fr'
-
 TIME_ZONE = 'UTC'
-
 USE_I18N = True
-
 USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'  # Correction : slash au début
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
-
+# Whitenoise static files storage
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 
 # Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'accounts.Controleur'
 LOGOUT_REDIRECT_URL = reverse_lazy('accounts:index')
 
 LOGIN_URL = 'accounts:connexion'  # ou '/login/' si vous utilisez une URL directe
-#LOGIN_REDIRECT_URL = 'dashboard'  # page après connexion
+# LOGIN_REDIRECT_URL = 'dashboard'  # page après connexion
 
-# Configuration d'envoie des emails
 
-# settings.py
-
+# Email configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'yann.russel.webwriter@gmail.com'  # à remplacer
-EMAIL_HOST_PASSWORD = 'cmbfhstnejyegjiu'    # à remplacer par mot de passe d'application
+EMAIL_HOST_PASSWORD = 'cmbfhstnejyegjiu'    # mot de passe d'application à remplacer
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
-
