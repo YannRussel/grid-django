@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 
-# build.sh
+# Arrêter le script dès qu'une commande échoue
+set -o errexit
 
+# Installer les dépendances
 pip install -r requirements.txt
+
+# Collecter les fichiers statiques pour Whitenoise
 python manage.py collectstatic --no-input
+
+# Appliquer les migrations
 python manage.py migrate
 
-# Crée un superuser avec numéro de téléphone s'il n'existe pas
+# Créer un superuser si nécessaire
 echo "
 from accounts.models import Controleur
 if not Controleur.objects.filter(phone_number='${DJANGO_SU_PHONE}').exists():
