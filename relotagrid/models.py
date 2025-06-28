@@ -4,6 +4,8 @@ from .validators import validate_numero_congo
 from django.core.validators import MinLengthValidator
 from django.contrib.auth import get_user_model
 import uuid
+from cloudinary.models import CloudinaryField 
+from cloudinary_storage.storage import MediaCloudinaryStorage
 
 User = get_user_model()
 
@@ -63,13 +65,14 @@ class ElementControl(models.Model) :
 
 from django.db import models
 
+
 class Agent(models.Model):
     nom = models.CharField(max_length=100)
     prenom = models.CharField(max_length=100)
     telephone = models.CharField(max_length=20)
     adresse = models.CharField(max_length=255, blank=True, null=True)
-    image = models.ImageField(upload_to='agents/images/', blank=True, null=True)
-    cv = models.FileField(upload_to='agents/cv/', blank=True, null=True)
+    image = CloudinaryField('image', blank=True, null=True)
+    cv = models.FileField(upload_to='agents/cv/', storage=MediaCloudinaryStorage(), blank=True, null=True)
     site = models.ManyToManyField('Site', related_name='agents')
 
     date_naissance = models.DateField(blank=True, null=True)

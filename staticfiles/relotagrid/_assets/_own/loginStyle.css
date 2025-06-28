@@ -1,0 +1,33 @@
+html,
+body {
+    height: 100%;
+    margin: 0;
+}
+
+/* body {
+    background: linear-gradient(to bottom,white,var(--bs-success));
+   
+} */
+
+
+.full-page {
+    height: 100vh;
+
+}
+
+.center-box {
+    width: 400px;
+    padding: 20px 40px;
+    background-color: #f8f9fa;
+    border-radius: 10px;
+    /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);*/
+}
+@media screen and (max-width: 768px) {
+    .center-box {
+        width: 90%;
+        padding: 20px 20px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);*/
+    }
+  }

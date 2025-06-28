@@ -1,0 +1,62 @@
+
+  
+
+:root{
+    --bs-success: rgb(8, 28, 157);
+    --bs-success-light: rgb(38, 95, 227);
+    --text-danger: red;
+}
+
+.text-success{ color: var(--bs-success)!important;}
+.bg-success{ background-color: var(--bs-success)!important;}
+.btn-success{ background-color: var(--bs-success)!important; color:white}
+.btn-success:hover{ background-color: var(--bs-success-light)!important;color:white}
+
+
+.text-blanc{ color:white!important;  }
+.bg-blanc{ background-color:white!important;  }
+
+/*** LES LIENS ***/
+.link{text-decoration: none;}
+
+/*** alignement ***/
+.text-justify{text-align: justify!important;}
+
+/***** fond ****/
+.degrader-success-right{
+    background: linear-gradient(to right,white,white,var(--bs-success));
+}
+.degrader-success-left{
+    background: linear-gradient(to left,white,white,var(--bs-success));
+}
+/********  navbar  *****/
+.marge_navbar{
+    margin-left:9rem!important;
+    margin-right:9rem !important;
+}
+.border-success{
+    border:0px solid var(--bs-success)!important;
+}
+/********  MES CLASSES *****/
+.enGrasMax{font-weight: bold!important;}
+.enGrasMin{font-weight: 100;}
+
+
+.form-control, .form-select{
+    border-radius: 0;
+}
+
+/* body{ 
+    background: url("../image/—Pngtree—float\ poster\ banner\ background_3927309.png");
+    background-size: 50%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    
+} */
+@media screen and (max-width: 768px) {
+    .marge_navbar{
+        margin-left:0px!important;
+        margin-right:0px!important;
+    }
+}
